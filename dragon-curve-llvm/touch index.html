@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dragon Curve from WebAssembly</title>
+  </head>
+  <body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+      const size = 2000;
+      const len = 10;
+      const x0 = 500;
+      const y0 = 500;
+      WebAssembly.instantiateStreaming(fetch("/dragon-curve.wasm"), {
+        // この例では何もインポートしない
+        imports: {},
+      }).then((obj) => {
+        const { memory, __heap_base, dragonCurve } = obj.instance.exports;
+        dragonCurve(__heap_base, size, len, x0, y0);
+        const coords = new Float64Array(memory.buffer, __heap_base, size);
+        const canvas = document.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        [...Array(size)].forEach((_, i) => {
+          ctx.lineTo(coords[2 * i], coords[2 * i + 1]);
+        });
+        ctx.stroke();
+
+        // 曲線をアニメーションしたい場合は末尾の4行を以下に変更する
+        // [...Array(size)].forEach((_, i) => {
+        //   setTimeout(() => {
+        //     requestAnimationFrame(() => {
+        //       ctx.lineTo(coords[2 * i], coords[2 * i + 1]);
+        //       ctx.stroke();
+        //     });
+        //   }, 100 * i);
+        // });
+      });
+    </script>
+  </body>
+</html>
